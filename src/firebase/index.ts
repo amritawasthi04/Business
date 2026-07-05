@@ -1,3 +1,4 @@
 export { getFirebaseAdminApp } from "./admin";
-export { db } from "./firestore";
-export { storage } from "./storage";
+export { db, getDb } from "./firestore";
+export { storage, getStorageBucket } from "./storage";
+

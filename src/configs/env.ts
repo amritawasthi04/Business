@@ -14,7 +14,7 @@ export interface IEnvConfig {
 /**
  * Validates and retrieves required environment variables, failing fast on missing or malformed items.
  */
-function validateAndLoadEnv(): IEnvConfig {
+export function validateEnvironment(): IEnvConfig {
   const errors: string[] = [];
 
   const getRequired = (name: string): string => {
@@ -62,7 +62,29 @@ function validateAndLoadEnv(): IEnvConfig {
   };
 }
 
+let cachedEnv: IEnvConfig | null = null;
+
 /**
- * Verified global application environment variables.
+ * Returns the validated environment configuration, caching the result after the first call.
  */
-export const ENV: IEnvConfig = validateAndLoadEnv();
+export function getEnv(): IEnvConfig {
+  if (!cachedEnv) {
+    cachedEnv = validateEnvironment();
+  }
+  return cachedEnv;
+}
+
+/**
+ * Returns true if the environment is production.
+ */
+export function isProduction(): boolean {
+  return (process.env.NODE_ENV || "development") === "production";
+}
+
+/**
+ * Returns true if the environment is development.
+ */
+export function isDevelopment(): boolean {
+  return (process.env.NODE_ENV || "development") === "development";
+}
+
