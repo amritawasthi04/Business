@@ -74,13 +74,18 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     if (pageInstance) {
       try {
         await releasePageResources(pageInstance);
       } catch (_) {}
     }
-    return handleApiError(error);
+    console.error("DEBUG EXCEPTION:", error);
+    return NextResponse.json({
+      success: false,
+      message: error?.message || String(error),
+      stack: error?.stack,
+    }, { status: 500 });
   } finally {
     // 5. Close browser to release resources
     try {
