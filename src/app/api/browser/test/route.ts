@@ -76,4 +76,20 @@ export async function POST(request: NextRequest) {
   }
 }
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+/**
+ * GET /api/browser/test
+ * Friendly endpoint helper response for browser visits.
+ */
+export async function GET() {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Method Not Allowed. Please send a POST request with a JSON body containing a 'url' parameter to perform browser engine tests.",
+    },
+    { status: 405 }
+  );
+}
+
 
