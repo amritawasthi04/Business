@@ -1,6 +1,7 @@
 import puppeteer, { Browser } from "puppeteer-core";
-import { IBrowserConfig } from "../interfaces/browser.interface";
+import { IBrowserConfig } from "@/interfaces/browser.interface";
 import { getChromiumLaunchOptions } from "./chromium";
+import { PUPPETEER_CONFIG } from "@/configs/puppeteer.config";
 import { logger } from "@/utils/logger";
 
 let activeBrowser: Browser | null = null;
@@ -26,7 +27,7 @@ export async function launchBrowser(config: IBrowserConfig = { headless: true })
       args: launchOptions.args,
       defaultViewport: launchOptions.defaultViewport,
       headless: launchOptions.headless,
-      timeout: config.launchTimeout || 30000,
+      timeout: config.launchTimeout || PUPPETEER_CONFIG.launchTimeout,
     });
     
     logger.info("Browser engine successfully launched");
@@ -34,6 +35,26 @@ export async function launchBrowser(config: IBrowserConfig = { headless: true })
   } catch (error) {
     logger.error("Browser launch failed critical execution", error);
     throw error;
+  }
+}
+
+/**
+ * Gracefully shuts down active browser instance and terminates Chromium.
+ */
+export async function closeBrowser(): Promise<void> {
+  if (activeBrowser) {
+    try {
+      logger.info("Closing active browser singleton instance");
+      const pages = await activeBrowser.pages();
+      // Safely close all pages first
+      await Promise.all(pages.map((p) => p.close().catch(() => {})));
+      await activeBrowser.close();
+      logger.info("Browser engine successfully closed and terminated");
+    } catch (error) {
+      logger.error("Error occurred while closing browser engine instance", error);
+    } finally {
+      activeBrowser = null;
+    }
   }
 }
 
@@ -50,3 +71,6 @@ export function getActiveBrowser(): Browser | null {
 export function clearActiveBrowserReference(): void {
   activeBrowser = null;
 }
+
+export { createPage, closePage } from "./page";
+

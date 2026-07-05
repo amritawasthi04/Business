@@ -10,4 +10,5 @@ export { autoScroll } from "./autoScroll";
 export { captureScreenshot } from "./screenshot";
 export { releasePageResources, closeBrowser } from "./cleanup";
 export { loadPage } from "./pageLoader";
-export type { ILoadedPageWrapper } from "./pageLoader";
+export type { ILoadedPageWrapper } from "@/interfaces/loader.interface";
+

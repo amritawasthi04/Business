@@ -1,14 +1,11 @@
 import { Browser, Page } from "puppeteer-core";
-import { IPageLoadConfig, IPageLoadResult } from "../interfaces/scraper.interface";
+import { IPageLoadConfig, IPageLoadResult, ILoadedPageWrapper } from "@/interfaces/loader.interface";
 import { createPage, closePage } from "./page";
 import { autoScroll } from "./autoScroll";
 import { delay } from "../utils/delay";
+import { validator } from "@/utils/validator";
 import { logger } from "@/utils/logger";
-
-export interface ILoadedPageWrapper {
-  page: Page;
-  result: IPageLoadResult;
-}
+import { AppError } from "@/utils/error";
 
 /**
  * High level routine coordinating page load workflows:
@@ -23,15 +20,24 @@ export async function loadPage(
   const {
     url,
     timeout = 30000,
+    waitUntil = "domcontentloaded",
     autoScroll: triggerScroll = true,
     scrollDistance = 250,
     scrollDelay = 500,
     maxScrolls = 20,
     actionDelay = 1000,
+    extraDelay,
     pageConfig = {},
   } = config;
 
   logger.info(`Starting page loading sequence for: ${url}`);
+  
+  // 0. Validate URL
+  if (!validator.isValidUrl(url)) {
+    logger.error(`Invalid URL provided: ${url}`);
+    throw new AppError(`Invalid URL provided: ${url}`, 400, "BAD_REQUEST");
+  }
+
   const startTime = Date.now();
   
   // 1. Create page
@@ -39,9 +45,9 @@ export async function loadPage(
   let status = 200;
 
   try {
-    // 2. Navigate and wait for DOMContentLoaded
+    // 2. Navigate and wait for configured load lifecycle event
     const response = await page.goto(url, {
-      waitUntil: "domcontentloaded",
+      waitUntil,
       timeout,
     });
 
@@ -61,9 +67,10 @@ export async function loadPage(
       await autoScroll(page, scrollDistance, scrollDelay, maxScrolls);
     }
 
-    // 5. Apply action delay
-    if (actionDelay > 0) {
-      await delay(actionDelay);
+    // 5. Apply action delay / extra delay
+    const finalDelay = extraDelay !== undefined ? extraDelay : actionDelay;
+    if (finalDelay > 0) {
+      await delay(finalDelay);
     }
 
     // 6. Gather page metadata
@@ -92,3 +99,4 @@ export async function loadPage(
     throw error;
   }
 }
+

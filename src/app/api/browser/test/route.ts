@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { launchBrowser } from "@/scraper/browser/browser";
+import { launchBrowser, closeBrowser } from "@/scraper/browser/browser";
 import { loadPage } from "@/scraper/browser/pageLoader";
 import { releasePageResources } from "@/scraper/browser/cleanup";
 import { safeJsonParse } from "@/utils/helpers";
@@ -13,6 +13,7 @@ import { logRequest } from "@/middleware/requestLogger";
  */
 export async function POST(request: NextRequest) {
   let pageInstance;
+  let browserInstance;
   try {
     logRequest(request);
 
@@ -27,10 +28,10 @@ export async function POST(request: NextRequest) {
     logger.info(`Starting browser engine lifecycle test for: ${url}`);
     
     // 1. Launch browser instance
-    const browser = await launchBrowser({ headless: true });
+    browserInstance = await launchBrowser({ headless: true });
 
     // 2. Open and load target page
-    const loadResult = await loadPage(browser, {
+    const loadResult = await loadPage(browserInstance, {
       url,
       timeout: 30000,
       autoScroll: false, // Keep it simple for testing endpoint
@@ -47,10 +48,18 @@ export async function POST(request: NextRequest) {
     // 4. Return exact flat JSON structure requested in Phase 2
     return NextResponse.json({
       success: true,
-      title: result.title,
-      url: result.url,
-      loadTime: `${result.loadTime}ms`,
-      status: result.status,
+      message: "Browser engine working successfully.",
+      data: {
+        title: result.title,
+        url: result.url,
+        status: result.status,
+        loadTimeMs: result.loadTime,
+        pageReady: true,
+        browser: {
+          engine: "Chromium",
+          headless: true,
+        },
+      },
     });
   } catch (error) {
     if (pageInstance) {
@@ -59,6 +68,12 @@ export async function POST(request: NextRequest) {
       } catch (_) {}
     }
     return handleApiError(error);
+  } finally {
+    // 5. Close browser to release resources
+    try {
+      await closeBrowser();
+    } catch (_) {}
   }
 }
 export const dynamic = "force-dynamic";
+

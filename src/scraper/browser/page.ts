@@ -1,5 +1,5 @@
 import { Browser, Page } from "puppeteer-core";
-import { IPageConfig } from "../interfaces/page.interface";
+import { IPageConfig } from "@/interfaces/page.interface";
 import { setupRequestInterception } from "./requestInterceptor";
 import { getDesktopUserAgent } from "./userAgent";
 import { getBrowserHeaders } from "./headers";
@@ -18,7 +18,7 @@ export async function createPage(browser: Browser, config: IPageConfig = {}): Pr
 }
 
 /**
- * Configures an existing Page instance (headers, user agent, viewport, blocklists).
+ * Configures an existing Page instance (headers, user agent, viewport, blocklists, JS, cache, timezone).
  * @param page The Page instance to configure
  * @param config The page setup configurations
  */
@@ -39,11 +39,22 @@ export async function configurePage(page: Page, config: IPageConfig = {}): Promi
   const headers = getBrowserHeaders(undefined, config.customHeaders);
   await page.setExtraHTTPHeaders(headers);
 
-  // 4. Setup request interceptions
+  // 4. Configure JavaScript, Cache, and Timezone
+  await page.setJavaScriptEnabled(true);
+  await page.setCacheEnabled(false);
+  
+  try {
+    await page.emulateTimezone("America/New_York");
+  } catch (err) {
+    logger.warn("Could not emulate timezone", { error: String(err) });
+  }
+
+  // 5. Setup request interceptions
   if (config.interceptor) {
     await setupRequestInterception(page, config.interceptor);
   }
 }
+
 
 /**
  * Safely closes an open Page instance.
