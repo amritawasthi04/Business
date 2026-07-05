@@ -12,6 +12,14 @@ import { logRequest } from "@/middleware/requestLogger";
  * Utility testing endpoint to verify that Chromium and Puppeteer load processes operate correctly.
  */
 export async function POST(request: NextRequest) {
+  console.log({
+    node: process.version,
+    platform: process.platform,
+    vercel: process.env.VERCEL,
+    runtime: process.env.NEXT_RUNTIME,
+    nodeEnv: process.env.NODE_ENV,
+  });
+
   let pageInstance;
   let browserInstance;
   try {
@@ -28,15 +36,20 @@ export async function POST(request: NextRequest) {
     logger.info(`Starting browser engine lifecycle test for: ${url}`);
     
     // 1. Launch browser instance
+    console.log("Launching Browser");
     browserInstance = await launchBrowser({ headless: true });
+    console.log("Browser Ready");
 
     // 2. Open and load target page
+    console.log("Page Created");
+    console.log("Navigating");
     const loadResult = await loadPage(browserInstance, {
       url,
       timeout: 30000,
       autoScroll: false, // Keep it simple for testing endpoint
       actionDelay: 500,
     });
+    console.log("Finished");
 
     pageInstance = loadResult.page;
     const { result } = loadResult;
@@ -77,6 +90,8 @@ export async function POST(request: NextRequest) {
 }
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+export const runtime = "nodejs";
+
 
 /**
  * GET /api/browser/test

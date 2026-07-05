@@ -21,7 +21,14 @@ export async function launchBrowser(config: IBrowserConfig = { headless: true })
   logger.info("Initializing launch of a new browser engine instance");
   const launchOptions = await getChromiumLaunchOptions(config.headless);
 
+  console.log({
+    executablePath: launchOptions.executablePath,
+    args: launchOptions.args.length,
+    headless: launchOptions.headless
+  });
+
   try {
+    console.log("Attempting puppeteer.launch()");
     activeBrowser = await puppeteer.launch({
       executablePath: launchOptions.executablePath,
       args: launchOptions.args,
@@ -32,7 +39,11 @@ export async function launchBrowser(config: IBrowserConfig = { headless: true })
     
     logger.info("Browser engine successfully launched");
     return activeBrowser;
-  } catch (error) {
+  } catch (error: any) {
+    console.error("CRITICAL: puppeteer.launch() failed", error);
+    if (error && error.stack) {
+      console.error(error.stack);
+    }
     logger.error("Browser launch failed critical execution", error);
     throw error;
   }
