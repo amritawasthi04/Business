@@ -1,5 +1,6 @@
 import chromium from "@sparticuz/chromium";
 import fs from "fs";
+import path from "path";
 
 /**
  * Resolves browser options depending on whether the code is running on Vercel Serverless or locally.
@@ -15,11 +16,27 @@ export async function getChromiumLaunchOptions(headless: boolean = true): Promis
   const isVercel = !!process.env.VERCEL || process.platform !== "win32";
 
   if (isVercel) {
-    // Return options optimized for Vercel using @sparticuz/chromium
+    let executablePath = "";
+    try {
+      executablePath = await chromium.executablePath();
+    } catch (err) {
+      console.warn("Standard executablePath call failed, trying fallback bin path", err);
+    }
+
+    if (!executablePath || !fs.existsSync(executablePath)) {
+      const localBinPath = path.join(process.cwd(), "node_modules/@sparticuz/chromium/bin");
+      console.log("Checking fallback localBinPath:", localBinPath);
+      if (fs.existsSync(localBinPath)) {
+        executablePath = await chromium.executablePath(localBinPath);
+      } else {
+        console.error("localBinPath does not exist either!");
+      }
+    }
+
     return {
       args: chromium.args,
       defaultViewport: null, // Allow custom viewport configuration in Page manager
-      executablePath: await chromium.executablePath(),
+      executablePath,
       headless: headless ? ((chromium as any).headless as boolean | "shell") : false,
     };
   }
